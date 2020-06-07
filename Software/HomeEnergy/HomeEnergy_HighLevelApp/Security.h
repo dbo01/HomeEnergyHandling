@@ -1,4 +1,4 @@
-#define MY_CONNECTION_STRING "HostName=iotc-bb578f13-7811-42d7-82ae-1b096a70fe68.azure-devices.net;DeviceId=1p1ry3tq6ol;SharedAccessKey=1dZw8cl1HVMphc8NC1m9mkD3BExJpFAVenRoWkmf00k="
+#define MY_CONNECTION_STRING 
 
 /// <summary>
 ///     Set of bundle of root certificate authorities.
