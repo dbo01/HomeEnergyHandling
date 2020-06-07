@@ -1,0 +1,18 @@
+{
+    "SchemaVersion": 1,
+    "Name": "HomeEnergy_HighLevelApp",
+    //"ComponentId": "25025d2c-66da-4448-bae1-ac26fcdd3627",
+    "ComponentId": "685f13af-25a5-40b2-8dd8-8cbc253ecbd8",
+    "EntryPoint": "/bin/app",
+    "CmdArgs": [ "0ne0008C3A7" ],
+    "Capabilities": {
+        "AllowedApplicationConnections": [ "005180bc-402f-4cb3-a662-72937dbcde47" ],
+        "AllowedConnections": [ "iotc-bb578f13-7811-42d7-82ae-1b096a70fe68.azure-devices.net", "global.azure-devices-provisioning.net", "192.168.1.122" ],
+        "Gpio": [ "$AVNET_MT3620_SK_USER_BUTTON_A", "$AVNET_MT3620_SK_USER_BUTTON_B", "$AVNET_MT3620_SK_USER_LED_RED" ],
+        "NetworkConfig": true,
+        "DeviceAuthentication": "cdb1985e-926c-48d5-959e-8c8ab3c611df",
+        "I2cMaster": [ "$AVNET_MT3620_SK_ISU2_I2C" ],
+        "WifiConfig": true
+    },
+    "ApplicationType": "Default"
+}
