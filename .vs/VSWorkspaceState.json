@@ -6,6 +6,6 @@
     "\\Software\\HomeEnergy\\HomeEnergy_HighLevelApp",
     "\\Software\\HomeEnergy\\HomeEnergy_RTApp_MT3620_BareMetal"
   ],
-  "SelectedNode": "\\Software\\HomeEnergy\\HomeEnergy_HighLevelApp\\main.c",
+  "SelectedNode": "\\Software\\HomeEnergy\\HomeEnergy_HighLevelApp\\app_manifest.json",
   "PreviewInSolutionExplorer": false
 }

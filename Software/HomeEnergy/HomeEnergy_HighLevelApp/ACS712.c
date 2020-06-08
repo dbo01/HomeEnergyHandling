@@ -3,6 +3,8 @@
 double maxCurr;
 double MinCurr;
 
+double TotalEnergy;
+
 double toAmpsACS712(uint32_t RegVal )
 {
 	//double res = (double)(2.5F * (1 - (RegVal / 4096.0F))) / 0.066F;

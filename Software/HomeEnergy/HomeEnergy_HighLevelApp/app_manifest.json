@@ -12,7 +12,8 @@
         "NetworkConfig": true,
         "DeviceAuthentication": "cdb1985e-926c-48d5-959e-8c8ab3c611df",
         "I2cMaster": [ "$AVNET_MT3620_SK_ISU2_I2C" ],
-        "WifiConfig": true
+        "WifiConfig": true,
+        "MutableStorage": { "SizeKB": 12 }
     },
     "ApplicationType": "Default"
 }

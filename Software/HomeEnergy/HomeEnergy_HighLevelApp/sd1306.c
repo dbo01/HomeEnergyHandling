@@ -55,15 +55,6 @@ int initI2c(void) {
 		return -1;
 	}
 	return sd1306_init();
-	// Start OLED
-	//if (oled_init())
-	//{
-	//	//Log_Debug("OLED not found!\n");
-	//}
-	//else
-	//{
-	//	//Log_Debug("OLED found!\n");
-	//}
 }
 /**
   * @brief  Send command to sd1306.

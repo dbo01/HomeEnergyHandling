@@ -34,6 +34,9 @@ extern uint8_t RTCore_status; // TODO: Move this to respective .h file
 /*extern*/ uint8_t lsm6dso_status = 1;
 /*extern*/ uint8_t lps22hh_status = 1;
 
+
+static void update_energy(float x);
+
 /**
   * @brief  OLED initialization.
   * @param  None.
@@ -63,15 +66,17 @@ void update_oled()
 	break;
 	case 2:
 	{
-		clear_oled_buffer();
-		sd1306_draw_string(0, 0, " Cloud Twin", FONT_SIZE_TITLE, white_pixel);
+		update_energy(TotalEnergy);
+
+		//clear_oled_buffer();
+		//sd1306_draw_string(0, 0, " Cloud Twin", FONT_SIZE_TITLE, white_pixel);
 
 		//sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, oled_ms1, FONT_SIZE_LINE, white_pixel);
 		//sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, oled_ms2, FONT_SIZE_LINE, white_pixel);
 		//sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, oled_ms3, FONT_SIZE_LINE, white_pixel);
 		//sd1306_draw_string(OLED_LINE_4_X, OLED_LINE_4_Y, oled_ms4, FONT_SIZE_LINE, white_pixel);
 
-		sd1306_refresh();
+		//sd1306_refresh();
 	}
 	break;
 	case 3:
@@ -598,7 +603,6 @@ void update_current(float x, float y, float z)
 	// Strings for labels
 	uint8_t str_light[] = "I:";
 	uint8_t str_tbd1[] = "Ix:";
-	uint8_t str_tbd2[] = "TBD 2:";
 
 	// Clear OLED buffer
 	clear_oled_buffer();
@@ -626,15 +630,35 @@ void update_current(float x, float y, float z)
 	// Draw the units of y
 	sd1306_draw_string(sizeof(str_tbd1) * 10 + (get_str_size(string_data) + 1) * 10, OLEDA_LINE_2_Y, "A", FONT_SIZE_LINEA, white_pixel);
 
-	// Convert z value to string
-	//ftoa(z, string_data, 2);
+	// Send the buffer to OLED RAM
+	sd1306_refresh();
+}
 
-	//// Draw a label at line 3
-	//sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, str_tbd2, FONT_SIZE_LINE, white_pixel);
-	//// Draw the value of z
-	//sd1306_draw_string(sizeof(str_tbd2) * 6, OLED_LINE_3_Y, string_data, FONT_SIZE_LINE, white_pixel);
-	//// Draw the units of z
-	//sd1306_draw_string(sizeof(str_tbd2) * 6 + (get_str_size(string_data) + 1) * 6, OLED_LINE_3_Y, "Units", FONT_SIZE_LINE, white_pixel);
+void update_energy(float x)
+{
+	uint32_t i;
+	uint8_t string_data[10];
+
+	// Strings for labels
+	uint8_t str_light[] = "E:";
+	uint8_t str_tbd1[] = "";
+	uint8_t str_tbd2[] = "";
+
+	// Clear OLED buffer
+	clear_oled_buffer();
+
+	// Draw the title
+	sd1306_draw_string(OLED_TITLE_X, OLED_TITLE_Y, "   Energy", FONT_SIZE_TITLE, white_pixel);
+
+	// Convert x value to string
+	ftoa(x, string_data, 2);
+
+	// Draw a label at line 1
+	sd1306_draw_string(OLEDA_LINE_1_X, OLEDA_LINE_1_Y, str_light, FONT_SIZE_LINEA, white_pixel);
+	// Draw the value of x
+	sd1306_draw_string(sizeof(str_light) * 10, OLEDA_LINE_1_Y, string_data, FONT_SIZE_LINEA, white_pixel);
+	// Draw the units of x
+	sd1306_draw_string(sizeof(str_light) * 10 + (get_str_size(string_data) + 1) * 10, OLEDA_LINE_1_Y, "kWh", FONT_SIZE_LINEA, white_pixel);
 
 	// Send the buffer to OLED RAM
 	sd1306_refresh();

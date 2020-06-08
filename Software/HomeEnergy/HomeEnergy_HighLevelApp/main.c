@@ -22,7 +22,6 @@
 #include <applibs/log.h>
 #include <applibs/networking.h>
 #include <applibs/gpio.h>
-#include <applibs/storage.h>
 #include <applibs/application.h>
 
 #include "epoll_timerfd_utilities.h"
@@ -30,6 +29,8 @@
 #include "ACS712.h"
 #include "oled.h"
 #include "Sonoff.h"
+#include "nvm.h"
+
 // MT3620 RDB: Button A
 #define SAMPLE_BUTTON_1 12
 
@@ -52,7 +53,10 @@
 #include "parson.h" // used to parse Device Twin messages.
 
 #define SCOPEID_LENGTH 20
+#define RT_CORE_POOLING_TIMER 4
 #define PUMP_DELAY_COUNT 2
+#define HEATER_RESISTANCE 36 // 36 Ohm for 1500W single heating element
+
 // sending azure period configuration
 #define AZURE_TELEMETRY_PERIOD 10 // seconds
 
@@ -154,7 +158,7 @@ uint8_t TempSensor2 = 0;
 
 
 static void Send_ADC_data(void);
-static void Send_Accel_data(void);
+static void Send_Energy_data(void);
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
 /// </summary>
@@ -221,13 +225,8 @@ static void SocketEventHandler(EventData *eventData)
 		ADC_Data.u8[i] = rxBuf[i];	
     }
 
-
-
 	Log_Debug("Analog value := %d  \n", ADC_Data.u32);
-
 	current_sensor = toAmpsACS712(ADC_Data.u32);
-
-	
 
 	if (current_sensor > maxCurr)
 	{
@@ -237,6 +236,11 @@ static void SocketEventHandler(EventData *eventData)
 	{
 		MinCurr = current_sensor;
 	}
+
+	// Energy = Power * time -> Power = I^2 * R 
+	double deltaEnergy = current_sensor * current_sensor * HEATER_RESISTANCE * RT_CORE_POOLING_TIMER/3600; // Wh
+
+	TotalEnergy += deltaEnergy / 1000; // kWh
 }
 
 // event handler data structures. Only the event handler field needs to be populated.
@@ -263,8 +267,8 @@ static int InitHandlers(void)
         return -1;
     }
 
-    // Register four second timer to send a message to the real-time core.
-    static const struct timespec sendPeriod = {.tv_sec = 4, .tv_nsec = 0};
+    // Register timer to send a message to the real-time core.
+    static const struct timespec sendPeriod = {.tv_sec = RT_CORE_POOLING_TIMER, .tv_nsec = 0};
     timerFd = CreateTimerFdAndAddToEpoll(epollFd, &sendPeriod, &timerEventData, EPOLLIN);
     if (timerFd < 0) {
         return -1;
@@ -333,6 +337,8 @@ static int InitHandlers(void)
 		return -1;
 	}
 
+	TotalEnergy =  ReadMutableFile();
+
     return 0;
 }
 
@@ -376,6 +382,7 @@ int main(int argc, char* argv[])
 	if (0 == initI2c())
 	{
 		Log_Debug("[INFO]: OLED DETECTED, Init done \n");
+		update_oled();
 	}
 	else
 	{
@@ -406,6 +413,7 @@ int main(int argc, char* argv[])
 			if (GPIO_Value_Low == ledState) 
 			{
 				sentBytes = SonoffSendMessage(PiSrvFd, "on", sizeof("on"));
+				oled_state = 1;
 			}
 			else
 			{
@@ -417,8 +425,6 @@ int main(int argc, char* argv[])
 				SonoffRecEchoMsg(PiSrvFd, NULL);
 			}
 		}
-
-
     }
     CloseHandlers();
     Log_Debug("Application exiting.\n");
@@ -483,7 +489,7 @@ static void AzureTimerEventHandler(EventData* eventData)
 
 		Send_ADC_data();
 		IoTHubDeviceClient_LL_DoWork(iothubClientHandle);
-		Send_Accel_data();
+		
 	}
 }
 
@@ -504,10 +510,7 @@ static void AzureSensorEventHandler(EventData* eventData)
 			oled_state = 1;
 		}
 	}
-	else
-	{
-		oled_state = 0;
-	}
+
 
 	bool isNetworkReady = false;
 	if (Networking_IsNetworkingReady(&isNetworkReady) != -1) {
@@ -542,6 +545,13 @@ static void AzureSensorEventHandler(EventData* eventData)
 	}
 
 	HandlePumpControl();
+
+	int res = WriteToMutableFile(TotalEnergy);
+	if (0 != res)
+	{
+		Log_Error("Writing to non volatile memory failed", res );
+	}
+	Send_Energy_data();
 
 	if (iothubAuthenticated) { // put data to be sent on timed interval
 
@@ -668,13 +678,13 @@ static void TwinCallback(DEVICE_TWIN_UPDATE_STATE updateState, const unsigned ch
 	}
 
 	// Handle the Device Twin Desired Properties here.
-	JSON_Object* LEDState = json_object_dotget_object(desiredProperties, "StatusLED");
-	//if (LEDState != NULL) {
-	//	statusLedOn = (bool)json_object_get_boolean(LEDState, "value");
-	//	GPIO_SetValue(deviceTwinStatusLedGpioFd,
-	//		(statusLedOn == true ? GPIO_Value_Low : GPIO_Value_High));
-	//	TwinReportBoolState("StatusLED", statusLedOn);
-	//}
+	JSON_Object* OledState = json_object_dotget_object(desiredProperties, "OledState");
+	if (OledState != NULL)
+	{
+		oled_state = (uint8_t)json_object_get_number(OledState, "value");
+		TwinReportBoolState("OledState", oled_state);
+	}
+
 
 cleanup:
 	// Release the allocated memory.
@@ -836,16 +846,15 @@ static void Send_ADC_data(void)
 }
 
 /// <summary>
-///     Sends ADC values 
+///     Sends IoT telemetry 
 /// </summary>
-static void Send_Accel_data(void)
+static void Send_Energy_data(void)
 {
-	float gX = rand();
 	char tempBuffer[20];
-	int len = snprintf(tempBuffer, 6, "%f", gX);
+	int len = snprintf(tempBuffer, 6, "%f", TotalEnergy);
 	if (len > 0)
-		SendTelemetry("gX", tempBuffer);
+		SendTelemetry("Et", tempBuffer);
 	else
-		Log_Debug("ERROR: gX Value not sent");
+		Log_Error("Total Energy Value not sent !!!", -1);
 }
 
