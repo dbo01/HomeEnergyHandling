@@ -23,11 +23,6 @@ float light_sensor;
 // Altitude
 extern float altitude;
 
-// Array with messages from Azure
-//extern uint8_t oled_ms1[CLOUD_MSG_SIZE];
-//extern uint8_t oled_ms2[CLOUD_MSG_SIZE];
-//extern uint8_t oled_ms3[CLOUD_MSG_SIZE];
-//extern uint8_t oled_ms4[CLOUD_MSG_SIZE];
 
 // Status variables of I2C bus and RT core
 extern uint8_t RTCore_status; // TODO: Move this to respective .h file
@@ -68,51 +63,12 @@ void update_oled()
 	{
 		update_energy(TotalEnergy);
 
-		//clear_oled_buffer();
-		//sd1306_draw_string(0, 0, " Cloud Twin", FONT_SIZE_TITLE, white_pixel);
-
-		//sd1306_draw_string(OLED_LINE_1_X, OLED_LINE_1_Y, oled_ms1, FONT_SIZE_LINE, white_pixel);
-		//sd1306_draw_string(OLED_LINE_2_X, OLED_LINE_2_Y, oled_ms2, FONT_SIZE_LINE, white_pixel);
-		//sd1306_draw_string(OLED_LINE_3_X, OLED_LINE_3_Y, oled_ms3, FONT_SIZE_LINE, white_pixel);
-		//sd1306_draw_string(OLED_LINE_4_X, OLED_LINE_4_Y, oled_ms4, FONT_SIZE_LINE, white_pixel);
-
-		//sd1306_refresh();
 	}
 	break;
-	case 3:
-	{
-		//update_accel(sensor_data.acceleration_mg[0], sensor_data.acceleration_mg[1], sensor_data.acceleration_mg[2]);
-	}
-	break;
-	case 4:
-	{
-		//update_angular_rate(sensor_data.angular_rate_dps[0], sensor_data.angular_rate_dps[1], sensor_data.angular_rate_dps[2]);
-	}
-	break;
-	case 5:
-	{
-		//update_environ(sensor_data.lsm6dsoTemperature_degC, sensor_data.lps22hhTemperature_degC, sensor_data.lps22hhpressure_hPa);
-	}
-	break;
-	case 6:
-	{
-		//update_other(light_sensor, 0, 0);
-	}
-	break;
-	case 7:
-	{
-		update_current(current_sensor, 1, 0);
-
-	}
-	break;
-	case 8:
-		oled_draw_logo();
-
-		break;
-
 
 	default:
-		break;
+
+	break;
 	}
 }
 

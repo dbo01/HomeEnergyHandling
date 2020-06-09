@@ -153,12 +153,14 @@ union ADC_DataType
 
 //Sensors Data
 
-uint8_t TempSensor1 = 0;
-uint8_t TempSensor2 = 0; 
+uint8_t TempSensor1 = 20;
+uint8_t TempSensor2 = 30; 
 
 
 static void Send_ADC_data(void);
 static void Send_Energy_data(void);
+static void Send_T1_data(void);
+static void Send_T2_data(void);
 /// <summary>
 ///     Signal handler for termination requests. This handler must be async-signal-safe.
 /// </summary>
@@ -382,6 +384,7 @@ int main(int argc, char* argv[])
 	if (0 == initI2c())
 	{
 		Log_Debug("[INFO]: OLED DETECTED, Init done \n");
+		//oled_state = 1;
 		update_oled();
 	}
 	else
@@ -552,6 +555,15 @@ static void AzureSensorEventHandler(EventData* eventData)
 		Log_Error("Writing to non volatile memory failed", res );
 	}
 	Send_Energy_data();
+	Send_T1_data();
+	Send_T2_data();
+
+	oled_state += 1;
+
+	if (oled_state >= 3)
+	{
+		oled_state = 0;
+	}
 
 	if (iothubAuthenticated) { // put data to be sent on timed interval
 
@@ -853,7 +865,27 @@ static void Send_Energy_data(void)
 	char tempBuffer[20];
 	int len = snprintf(tempBuffer, 6, "%f", TotalEnergy);
 	if (len > 0)
-		SendTelemetry("Et", tempBuffer);
+		SendTelemetry("gX", tempBuffer);
+	else
+		Log_Error("Total Energy Value not sent !!!", -1);
+}
+
+static void Send_T1_data(void)
+{
+	char tempBuffer[20];
+	int len = snprintf(tempBuffer, 6, "%d", TempSensor1);
+	if (len > 0)
+		SendTelemetry("gY", tempBuffer);
+	else
+		Log_Error("Total Energy Value not sent !!!", -1);
+}
+
+static void Send_T2_data(void)
+{
+	char tempBuffer[20];
+	int len = snprintf(tempBuffer, 6, "%d", TempSensor2);
+	if (len > 0)
+		SendTelemetry("gZ", tempBuffer);
 	else
 		Log_Error("Total Energy Value not sent !!!", -1);
 }
