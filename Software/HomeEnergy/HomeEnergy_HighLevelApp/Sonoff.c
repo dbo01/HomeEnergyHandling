@@ -32,17 +32,9 @@ void Log_Error(char *buff, int res)
 
 int GetWifiInfo(void)
 {
-    int ret = 0;
 
-    while (WifiConfig_GetCurrentNetwork(&WiFiInfo) != 0)
-    {
-        if ((EACCES == errno) | (EINVAL == errno))
-        {
-            ret = -1;
-            break;
-        }
+    return WifiConfig_GetCurrentNetwork(&WiFiInfo);
 
-    }
 }
 
 int openSocket(void)
@@ -82,14 +74,14 @@ int openSocket(void)
 
 int ServerConnect(int socketFd)
 {
-    in_addr_t SonoffIP = { 0 };
+    struct in_addr SonoffIP = { 0 };
 
     inet_aton("192.168.1.122", &SonoffIP);
     // Bind to a well-known IP address.
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = SonoffIP;
+    addr.sin_addr.s_addr = SonoffIP.s_addr;
     addr.sin_port = htons((uint16_t)9999);
 
     if (socketFd < 0)
@@ -128,7 +120,7 @@ int CheckConnStatus(int ConnFd)
     int SrvError = 0;
     len = sizeof(SrvError);
 
-    getsockopt(ConnFd, SOL_SOCKET, SO_ERROR,(const void *)SrvError, &len); 
+    getsockopt(ConnFd, SOL_SOCKET, SO_ERROR, (void *)SrvError, &len); 
 
     Log_Debug("Connection Status: %s, SrvError Value %d  !! \n", strerror(SrvError), SrvError);
     strcpy(SonoffSrvState, strerror(SrvError));
@@ -166,7 +158,7 @@ int SonoffRecEchoMsg(int srvFd, char * resp)
     char rxBuff[20];
     while (ret != recv(srvFd, rxBuff, sizeof(rxBuff), MSG_WAITALL))
     {
-        if (errno != EAGAIN | errno != EAGAIN)
+        if ( (errno != EAGAIN) | (errno != EAGAIN) )
         {
             Log_Error("Failed to receive msg: %s !! \n", errno);
             SrvConnected = 0;
@@ -178,4 +170,6 @@ int SonoffRecEchoMsg(int srvFd, char * resp)
         strncpy(resp, rxBuff, ret);
     }
     Log_Debug("Received msg: %s !! \n", rxBuff);
+
+    return ret;
 }

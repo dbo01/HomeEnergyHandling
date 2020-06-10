@@ -565,6 +565,8 @@ static void AzureSensorEventHandler(EventData* eventData)
 		oled_state = 0;
 	}
 
+	GetWifiInfo();
+
 	if (iothubAuthenticated) { // put data to be sent on timed interval
 
 		
