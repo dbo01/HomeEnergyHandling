@@ -105,7 +105,7 @@ void update_accel(float x, float y, float z);
 void update_angular_rate(float x, float y, float z);
 void update_environ(float temp1, float temp2, float atm);
 void update_other(float x, float y, float z);
-void update_current(float x, float y, float z);
+void update_current(double x, double y, double z);
 
 /**
   * @brief  Converts a given integer x to string uint8_t[]

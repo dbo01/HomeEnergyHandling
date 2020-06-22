@@ -19,7 +19,7 @@
 #include <arpa/inet.h>
 
 WifiConfig_ConnectedNetwork WiFiInfo = {0};
-char SonoffSrvState[10] = "INIT";
+char SonoffSrvState[30] = "INIT";
 int SrvConnected = 0;
 int8_t connected = -1;
 
@@ -72,11 +72,15 @@ int openSocket(void)
     return retFd;
 }
 
-int ServerConnect(int socketFd)
+int ServerConnect(int socketFd, const char* IP)
 {
     struct in_addr SonoffIP = { 0 };
 
-    inet_aton("192.168.1.122", &SonoffIP);
+    int ret = inet_aton(IP, &SonoffIP);
+    if (0 == ret)
+    {
+        return -1;
+    }
     // Bind to a well-known IP address.
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
@@ -88,7 +92,7 @@ int ServerConnect(int socketFd)
     {
         Log_Error("Broken socket - Connection Failed",-1);
         SrvConnected = 0;
-        return -1;
+        return -2;
     }
     else
     {
@@ -171,5 +175,29 @@ int SonoffRecEchoMsg(int srvFd, char * resp)
     }
     Log_Debug("Received msg: %s !! \n", rxBuff);
 
+    return ret;
+}
+
+int SonoffActionMessage(int srvFd, char* msg, size_t msgSize)
+{
+    char resp[msgSize + 1];
+
+    if (NULL == msg)
+    {
+        return -1;
+    }
+    ret = send(srvFd, msg, sizeof(msg), MSG_EOR | MSG_NOSIGNAL);
+    if (ret < 0)
+    {
+        Log_Error("Msg not sent", ret);
+        SrvConnected = 0;
+
+    }
+    else if (ret == sizeof(msg))
+    {
+        Log_Debug("Msg sent: %s, %d bytes succesfully !! \n", msg, ret);
+        SrvConnected = 1;
+        SonoffRecEchoMsg(srvFd, resp);
+    }
     return ret;
 }

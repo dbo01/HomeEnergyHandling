@@ -1,6 +1,6 @@
-#ifndef ACS712.h
+#ifndef ACS712_H
 
-#define ACS712.h
+#define ACS712_H
 
 extern double maxCurr;
 extern double MinCurr;
@@ -8,5 +8,5 @@ extern double TotalEnergy;
 
 double toAmpsACS712(uint32_t RegVal);
 
-#endif // !ACS712.h
+#endif // !ACS712_H
 

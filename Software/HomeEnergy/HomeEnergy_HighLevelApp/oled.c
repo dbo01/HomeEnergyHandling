@@ -30,7 +30,7 @@ extern uint8_t RTCore_status; // TODO: Move this to respective .h file
 /*extern*/ uint8_t lps22hh_status = 1;
 
 
-static void update_energy(float x);
+static void update_energy(double x);
 
 /**
   * @brief  OLED initialization.
@@ -551,7 +551,7 @@ void update_other(float x, float y, float z)
 	sd1306_refresh();
 }
 
-void update_current(float x, float y, float z)
+void update_current(double x, double y, double z)
 {
 	uint32_t i;
 	uint8_t string_data[10];
@@ -590,7 +590,7 @@ void update_current(float x, float y, float z)
 	sd1306_refresh();
 }
 
-void update_energy(float x)
+void update_energy(double x)
 {
 	uint32_t i;
 	uint8_t string_data[10];

@@ -56,9 +56,9 @@
 #define RT_CORE_POOLING_TIMER 4
 #define PUMP_DELAY_COUNT 2
 #define HEATER_RESISTANCE 36 // 36 Ohm for 1500W single heating element
-
+#define CURRENT_TRESHOLD 0.2 // Ampers
 // sending azure period configuration
-#define AZURE_TELEMETRY_PERIOD 10 // seconds
+#define AZURE_TELEMETRY_PERIOD 120 // seconds
 
 static char scopeId[SCOPEID_LENGTH]; // ScopeId for the Azure IoT Central application, set in
 									 // app_manifest.json, CmdArgs
@@ -400,34 +400,14 @@ int main(int argc, char* argv[])
 	update_oled();
 
 	PiSrvFd = openSocket();
-	ServerConnect(PiSrvFd);
+	ServerConnect(PiSrvFd, "192.168.1.122");
 
     while (!terminationRequired) {
 
-		int sentBytes = 0;
-        if (WaitForEventAndCallHandler(epollFd) != 0) {
+		if (WaitForEventAndCallHandler(epollFd) != 0) {
             terminationRequired = true;
         }
 
-		/* Debuging purpose led*/
-		if (NewledState != ledState)
-		{
-			
-			if (GPIO_Value_Low == ledState) 
-			{
-				sentBytes = SonoffSendMessage(PiSrvFd, "on", sizeof("on"));
-				oled_state = 1;
-			}
-			else
-			{
-				sentBytes = SonoffSendMessage(PiSrvFd, "off", sizeof("off"));
-			}
-			NewledState = ledState;
-			if (sentBytes > 0)
-			{
-				SonoffRecEchoMsg(PiSrvFd, NULL);
-			}
-		}
     }
     CloseHandlers();
     Log_Debug("Application exiting.\n");
@@ -451,14 +431,29 @@ static void ButtonPollTimerEventHandler(EventData* eventData)
 		return;
 	}
 
-	// If the button has just been pressed, change the LED blink interval
+	// If the button has just been pressed turn on remote Sonoff Switch
 	// The button has GPIO_Value_Low when pressed and GPIO_Value_High when released
 	if (newButtonState != buttonState) {
 
+		int sentBytes;
 
 		if (GPIO_Value_Low == buttonState)
 		{
 			ledState = !ledState;
+
+			if (GPIO_Value_Low == ledState)
+			{
+				sentBytes = SonoffSendMessage(PiSrvFd, "on", sizeof("on"));
+			}
+			else
+			{
+				sentBytes = SonoffSendMessage(PiSrvFd, "off", sizeof("off"));
+			}
+			if (sentBytes > 0)
+			{
+				SonoffRecEchoMsg(PiSrvFd, NULL);
+			}
+
 			GPIO_SetValue(deviceTwinStatusLedGpioFd, ledState);
 		}
 		
@@ -489,8 +484,11 @@ static void AzureTimerEventHandler(EventData* eventData)
 	}
 
 	if (iothubAuthenticated) { // put data to be sent when checking connection to client
-
-		Send_ADC_data();
+		if (current_sensor > CURRENT_TRESHOLD)
+		{
+			Send_ADC_data();
+		}
+		
 		IoTHubDeviceClient_LL_DoWork(iothubClientHandle);
 		
 	}
@@ -508,7 +506,7 @@ static void AzureSensorEventHandler(EventData* eventData)
 
 	if (!SrvConnected)
 	{
-		if (0 == ServerConnect(PiSrvFd))
+		if (0 == ServerConnect(PiSrvFd, "192.168.1.122"))
 		{
 			oled_state = 1;
 		}
@@ -554,8 +552,11 @@ static void AzureSensorEventHandler(EventData* eventData)
 	{
 		Log_Error("Writing to non volatile memory failed", res );
 	}
-	Send_Energy_data();
-	Send_T1_data();
+	if (current_sensor > CURRENT_TRESHOLD)
+	{
+		Send_Energy_data();
+		Send_T1_data();
+	}
 	Send_T2_data();
 
 	oled_state += 1;
@@ -585,6 +586,7 @@ static int HandlePumpControl()
 		if (OnDelayCounter >= PUMP_DELAY_COUNT)
 		{
 			NewledState = !ledState;
+			SonoffActionMessage(PiSrvFd, "on", sizeof("on"));
 			OnDelayCounter = 0;
 			PumpIsOff = 0;
 		}
@@ -597,6 +599,7 @@ static int HandlePumpControl()
 		if (OffDelayCounter >= PUMP_DELAY_COUNT)
 		{
 			NewledState = !ledState;
+			SonoffActionMessage(PiSrvFd, "off", sizeof("off"));
 			OffDelayCounter = 0;
 			PumpIsOff = 1;
 		}
@@ -879,7 +882,7 @@ static void Send_T1_data(void)
 	if (len > 0)
 		SendTelemetry("gY", tempBuffer);
 	else
-		Log_Error("Total Energy Value not sent !!!", -1);
+		Log_Error("Temp Sensor 1 Value not sent !!!", -1);
 }
 
 static void Send_T2_data(void)
@@ -889,6 +892,6 @@ static void Send_T2_data(void)
 	if (len > 0)
 		SendTelemetry("gZ", tempBuffer);
 	else
-		Log_Error("Total Energy Value not sent !!!", -1);
+		Log_Error("Temp Sensor 2 Value not sent !!!", -1);
 }
 
